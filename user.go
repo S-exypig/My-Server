@@ -31,11 +31,12 @@ func NewUser(conn net.Conn, s *server) *user {
 func (u *user) ListenMessage() {
 	for {
 		msg := <-u.ch      // 当user的通道有信息，则取出
-		u.SendMessage(msg) // 将信息通过socket发送给Client端
+		u.SendMessage(msg) 
 	}
 }
 
 func (u *user) SendMessage(msg string) {
+	// 将信息通过socket发送给Client端
 	u.conn.Write([]byte(msg + "\n"))
 }
 
@@ -63,6 +64,7 @@ func (u *user) DoMessage(msg string) {
 		}
 		u.server.mapSync.Unlock()
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
+		// 重命名：rename|xxx
 		newName := strings.Split(msg, "|")[1]
 		_, exist := u.server.onlineMap[newName]
 		if exist {
@@ -75,7 +77,6 @@ func (u *user) DoMessage(msg string) {
 			u.server.mapSync.Unlock()
 			u.name = newName
 			u.SendMessage(fmt.Sprintf("您的用户名已更新:%v", newName))
-			
 		}
 	} else {
 		u.server.Broadcast(u, msg)

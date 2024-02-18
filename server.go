@@ -59,7 +59,7 @@ func (s *server) Handler(conn net.Conn) {
 				return
 			}
 			msg := string(buf[:n-1])
-			u.DoMessage(msg)
+			u.DoMessage(msg) // 将信息交给S端的user模块进行处理
 		}
 	}()
 }
