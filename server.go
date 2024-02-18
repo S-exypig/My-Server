@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"time"
 )
 
 type server struct {
@@ -46,6 +47,8 @@ func (s *server) Handler(conn net.Conn) {
 	fmt.Printf("连接成功，开始处理!\n")
 	u := NewUser(conn, s)
 	u.Online()
+	isAliveCh := make(chan bool)
+	isnAliveCh := make(chan bool)
 	go func() { // 接收C端发送来的数据
 		buf := make([]byte, 4096)
 		for {
@@ -54,14 +57,29 @@ func (s *server) Handler(conn net.Conn) {
 				if err == io.EOF {
 					u.Offline()
 				} else {
-					fmt.Printf("Conn Read Error:%v", err)
+					fmt.Printf("Conn Read Error:%v\n", err)
 				}
+				isnAliveCh <- true
 				return
 			}
 			msg := string(buf[:n-1])
 			u.DoMessage(msg) // 将信息交给S端的user模块进行处理
+			isAliveCh <- true
 		}
 	}()
+
+	for {
+		select {
+		case <-isAliveCh:
+		case <-time.After(10 * time.Second):
+			// 10s超时，强制下线
+			u.SendMessage("你已被超时强踢！")
+			u.Offline()
+			return
+		case <-isnAliveCh:
+			return
+		}
+	}
 }
 
 func (s *server) Broadcast(u *user, msg string) {

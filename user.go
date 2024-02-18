@@ -30,8 +30,8 @@ func NewUser(conn net.Conn, s *server) *user {
 
 func (u *user) ListenMessage() {
 	for {
-		msg := <-u.ch      // 当user的通道有信息，则取出
-		u.SendMessage(msg) 
+		msg := <-u.ch // 当user的通道有信息，则取出
+		u.SendMessage(msg)
 	}
 }
 
@@ -51,6 +51,7 @@ func (u *user) Offline() {
 	u.server.mapSync.Lock()
 	delete(u.server.onlineMap, u.name)
 	u.server.mapSync.Unlock()
+	u.conn.Close()
 	u.server.Broadcast(u, "已下线")
 }
 
