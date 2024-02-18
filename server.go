@@ -72,10 +72,10 @@ func (s *server) ListenMessage() {
 	fmt.Println("开始监听用户上线")
 	for {
 		msg := <-s.message
-		s.mapSync.Lock()
+		s.mapSync.RLock()
 		for _, v := range s.onlineMap {
 			v.ch <- msg
 		}
-		s.mapSync.Unlock()
+		s.mapSync.RUnlock()
 	}
 }

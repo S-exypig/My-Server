@@ -57,16 +57,18 @@ func (u *user) Offline() {
 func (u *user) DoMessage(msg string) {
 	if msg == "who" {
 		// 查询在线用户
-		u.server.mapSync.Lock()
+		u.server.mapSync.RLock()
 		for _, v := range u.server.onlineMap {
 			m := fmt.Sprintf("[%v]%v:在线...\n", v.addr, v.name)
 			u.SendMessage(m)
 		}
-		u.server.mapSync.Unlock()
+		u.server.mapSync.RUnlock()
 	} else if len(msg) > 7 && msg[:7] == "rename|" {
 		// 重命名：rename|xxx
 		newName := strings.Split(msg, "|")[1]
+		u.server.mapSync.RLock()
 		_, exist := u.server.onlineMap[newName]
+		u.server.mapSync.RUnlock()
 		if exist {
 			m := fmt.Sprintf("用户名%v已存在!", newName)
 			u.SendMessage(m)
