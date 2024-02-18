@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"net"
 	"sync"
 )
@@ -43,14 +44,27 @@ func (s *server) Start() {
 
 func (s *server) Handler(conn net.Conn) {
 	fmt.Printf("连接成功，开始处理!\n")
-	u := NewUser(conn)
-	s.mapSync.Lock()
-	s.onlineMap[u.name] = u
-	s.mapSync.Unlock()
-	s.SendMessage(u, "已上线")
+	u := NewUser(conn, s)
+	u.Online()
+	go func() { // 接收C端发送来的数据
+		buf := make([]byte, 4096)
+		for {
+			n, err := conn.Read(buf)
+			if err != nil {
+				if err == io.EOF {
+					u.Offline()
+				} else {
+					fmt.Printf("Conn Read Error:%v", err)
+				}
+				return
+			}
+			msg := string(buf[:n-1])
+			u.DoMessage(msg)
+		}
+	}()
 }
 
-func (s *server) SendMessage(u *user, msg string) {
+func (s *server) Broadcast(u *user, msg string) {
 	s.message <- fmt.Sprintf("[%v]%v:%v", u.addr, u.name, msg)
 }
 
@@ -60,7 +74,7 @@ func (s *server) ListenMessage() {
 		msg := <-s.message
 		s.mapSync.Lock()
 		for _, v := range s.onlineMap {
-			v.c <- msg
+			v.ch <- msg
 		}
 		s.mapSync.Unlock()
 	}
