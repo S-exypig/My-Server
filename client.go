@@ -32,9 +32,9 @@ func main() {
 type client struct {
 	serverIp   string
 	serverPort int
-	name       string
-	conn       net.Conn
-	mode       int
+	// name       string
+	conn net.Conn
+	mode int
 }
 
 func NewClient(ip string, port int) *client {
@@ -51,20 +51,20 @@ func NewClient(ip string, port int) *client {
 	}
 	// 补全conn和name
 	client.conn = conn
-	client.name = conn.LocalAddr().String()
+	// client.name = conn.LocalAddr().String()
 	// 返回指针
 	return client
 }
 
 func (c *client) Menu() bool {
-	fmt.Println("0.退出")
+	fmt.Println("---------\n0.退出")
 	fmt.Println("1.私聊模式")
 	fmt.Println("2.公聊模式")
 	fmt.Println("3.修改用户名")
 	fmt.Println("4.查看在线用户")
 	var mode int
-	fmt.Scanln(&mode)
-	if mode < 0 || mode > 4 {
+	_, err := fmt.Scanln(&mode)
+	if err != nil || mode < 0 || mode > 4 {
 		fmt.Println("输入有误!")
 		return false
 	}
@@ -84,7 +84,7 @@ LOOP:
 		case 1:
 			fmt.Println("私聊模式...")
 		case 2:
-			fmt.Println("公聊模式...")
+			c.PublicChat()
 		case 3:
 			if c.UpdateName() {
 				fmt.Println("改名成功!")
@@ -99,8 +99,11 @@ LOOP:
 
 func (c *client) UpdateName() bool {
 	fmt.Println(">>>>>请输入用户名:")
-	fmt.Scanln(&c.name)
-	sendMsg := fmt.Sprintf("rename|%v\n", c.name)
+	var name string
+	// fmt.Scanln(&c.name)
+	// sendMsg := fmt.Sprintf("rename|%v\n", c.name)
+	fmt.Scanln(&name)
+	sendMsg := fmt.Sprintf("rename|%v\n", name)
 	_, err := c.conn.Write([]byte(sendMsg))
 	if err != nil {
 		fmt.Printf("conn.Write Error:%v\n", err)
@@ -113,4 +116,22 @@ func (c *client) UpdateName() bool {
 func (c *client) DealResponse() {
 	// 一旦客户端的conn收到数据，直接copy到标准输出流
 	io.Copy(os.Stdout, c.conn)
+}
+
+func (c *client) PublicChat() {
+	var chatMsg string
+	fmt.Println(">>>>>公聊模式--请输入聊天内容，exit退出.")
+	fmt.Scanln(&chatMsg)
+	for chatMsg != "exit" {
+		if chatMsg != "" {
+			_, err := c.conn.Write([]byte(chatMsg + "\n"))
+			chatMsg = ""
+			if err != nil {
+				fmt.Printf("Conn.Write Error:%v\n", err)
+				break
+			}
+		}
+		fmt.Println(">>>>>公聊模式--请输入聊天内容，exit退出.")
+		fmt.Scanln(&chatMsg)
+	}
 }
