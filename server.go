@@ -71,7 +71,7 @@ func (s *server) Handler(conn net.Conn) {
 	for {
 		select {
 		case <-isAliveCh:
-		case <-time.After(10 * time.Second):
+		case <-time.After(120 * time.Second):
 			// 10s超时，强制下线
 			u.SendMessage("你已被超时强踢！")
 			u.Offline()

@@ -64,9 +64,13 @@ func (u *user) DoMessage(msg string) {
 			u.SendMessage(m)
 		}
 		u.server.mapSync.RUnlock()
-	} else if len(msg) > 7 && msg[:7] == "rename|" {
+	} else if len(msg) > 6 && msg[:7] == "rename|" {
 		// 重命名：rename|xxx
 		newName := strings.Split(msg, "|")[1]
+		if newName == "" {
+			u.SendMessage("新用户名输入有误!")
+			return
+		}
 		u.server.mapSync.RLock()
 		_, exist := u.server.onlineMap[newName]
 		u.server.mapSync.RUnlock()
@@ -81,6 +85,22 @@ func (u *user) DoMessage(msg string) {
 			u.name = newName
 			u.SendMessage(fmt.Sprintf("您的用户名已更新:%v", newName))
 		}
+	} else if len(msg) > 2 && msg[:3] == "to|" {
+		// to私聊功能，输入to|name|content则可向对应用户私聊发送信息
+		splitMsg := strings.Split(msg, "|")
+		if len(splitMsg) != 3 || splitMsg[1] == "" || splitMsg[2] == "" { // 用户名和内容都不能为空（有可能错误，当内容或用户名含有|符号时）
+			u.SendMessage("to格式错误，请使用:to|name|content的形式")
+			return
+		}
+		remoteName, content := splitMsg[1], splitMsg[2]
+		u.server.mapSync.RLock()
+		remoteUser, exist := u.server.onlineMap[remoteName]
+		u.server.mapSync.RUnlock()
+		if !exist {
+			u.SendMessage(fmt.Sprintf("用户%v不存在!", remoteName))
+			return
+		}
+		remoteUser.SendMessage(fmt.Sprintf("%v 对您说:%v", u.name, content))
 	} else {
 		u.server.Broadcast(u, msg)
 	}
