@@ -82,7 +82,7 @@ LOOP:
 			fmt.Println("退出!")
 			break LOOP
 		case 1:
-			fmt.Println("私聊模式...")
+			c.PrivateChat()
 		case 2:
 			c.PublicChat()
 		case 3:
@@ -92,7 +92,7 @@ LOOP:
 				fmt.Println("改名未成功!")
 			}
 		case 4:
-			fmt.Println("查看在线用户...")
+			c.AcquireUsers()
 		}
 	}
 }
@@ -118,6 +118,7 @@ func (c *client) DealResponse() {
 	io.Copy(os.Stdout, c.conn)
 }
 
+// 公聊模式实现
 func (c *client) PublicChat() {
 	var chatMsg string
 	fmt.Println(">>>>>公聊模式--请输入聊天内容，exit退出.")
@@ -133,5 +134,43 @@ func (c *client) PublicChat() {
 		}
 		fmt.Println(">>>>>公聊模式--请输入聊天内容，exit退出.")
 		fmt.Scanln(&chatMsg)
+	}
+}
+
+// 查询在线用户实现
+func (c *client) AcquireUsers() {
+	_, err := c.conn.Write([]byte("who\n"))
+	if err != nil {
+		fmt.Printf("Conn.Write Error:%v\n", err)
+		return
+	}
+}
+
+// 私聊模式实现
+func (c *client) PrivateChat() {
+	c.AcquireUsers()
+	var name string
+	var content string
+	for {
+		fmt.Println(">>>>>私聊模式--请输入私聊用户，exit退出.")
+		fmt.Scanln(&name)
+		if name == "exit" {
+			break
+		}
+		for {
+			fmt.Println(">>>>>私聊模式--请输入私聊内容，exit退出.")
+			fmt.Scanln(&content)
+			if content == "exit" {
+				break
+			}
+			sendMsg := fmt.Sprintf("to|%v|%v\n", name, content)
+			_, err := c.conn.Write([]byte(sendMsg))
+			if err != nil {
+				fmt.Printf("Conn.Write Error\n", err)
+				break
+			}
+			content = ""
+		}
+		name = ""
 	}
 }
