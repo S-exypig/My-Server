@@ -10,11 +10,12 @@
 ## 使用说明
 clone项目到本地后，进入对应文件夹，打开shell键入：
 ```sh
-go run ./server.go ./user.go ./main.go
+go run ./server.go ./user.go ./main.go -ip SERVER_IP -port SERVER_PORT
 ```
-以运行服务端程序。
+以运行服务端程序，服务端默认IP和Port为localhost和8000。
+
 之后在新的shell中键入:
 ```sh
-go run ./client.go -ip localhost -port 8000
+go run ./client.go -ip SERVER_IP -port SERVER_PORT
 ```
-以运行客户端程序。
+以运行客户端程序，服务端默认IP和Port为localhost和8000。
